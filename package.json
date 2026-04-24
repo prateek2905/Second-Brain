@@ -13,13 +13,18 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/prateek2905/Second-Brain/issues"
   },
   "homepage": "https://github.com/prateek2905/Second-Brain#readme",
   "dependencies": {
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "express": "^5.2.1",
-    "typescript": "^6.0.3"
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.5.0",
+    "typescript": "^6.0.3",
+    "zod": "^4.3.6"
   }
 }
