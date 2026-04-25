@@ -5,11 +5,13 @@ import { z } from "zod";
 import bcrypt from "bcrypt";
 import db from './db.js'
 const { userModel, contentModel, tagsModel, linkModel } = db
+import dotenv from "dotenv"
+dotenv.config()
 
 const app = express();
-const port = 3000;
-mongoose.connect("mongodb+srv://admin:Prateekjay%401@cluster0.drtjknw.mongodb.net/");
-const JWT_SECRET = "JWT_SECRET"
+const port = Number(process.env.PORT) || 3000;
+const JWT_SECRET = process.env.JWT_SECRET as string;
+const MONGO_URL = process.env.MONGO_URL as string;
 
 const passwordSchema = z
   .string()
@@ -36,7 +38,7 @@ app.post("/api/v1/signup", async (req, res) => {
       password: hashedPassword,
     })
     res.status(200).json({
-      message:"you are signed in"
+      message:"you are signed up"
     })
   }catch (e: any){
     if(e.code === 11000){
@@ -69,8 +71,9 @@ app.post("/api/v1/signin", async(req, res) => {
       const passwordMatch = await bcrypt.compare(password, response.password);
       if(passwordMatch){
         const token = jwt.sign({
-          id: response._id.toString()
+          id: response._id
         }, JWT_SECRET);
+
         res.status(200).json({
           token,
           message:"you are signed in"
@@ -96,7 +99,7 @@ app.post("/api/v1/signin", async(req, res) => {
 });
 
 app.post("/api/v1/content", async(req, res) => {
-  
+
 });
 
 app.get("/api/v1/content", async(req, res) => {});
@@ -107,4 +110,10 @@ app.post("/api/v1/brain/share", async(req, res) => {});
 
 app.get("/api/v1/brain/:shareLink", async(req, res) => {});
 
-app.listen(port);
+async () =>{
+  await mongoose.connect(MONGO_URL);
+  app.listen(port);
+  console.log("Listening on port "+port);
+}
+
+
