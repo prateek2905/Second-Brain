@@ -4,8 +4,9 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import db from './db.js'
-const { userModel, contentModel, tagsModel, linkModel } = db
-import dotenv from "dotenv"
+const { userModel, contentModel, tagsModel, linkModel } = db;
+import { authMiddleware } from "./middlewares.js";
+import dotenv from "dotenv";
 dotenv.config()
 
 const app = express();
@@ -41,7 +42,7 @@ app.post("/api/v1/signup", async (req, res) => {
       message:"you are signed up"
     })
   }catch (e: any){
-    if(e.code === 11000){
+    if(e.code === 11000){ // MongoDB duplicate key error (unique field already exists)
       res.status(403).json({
         message:"User already exists"
       })
@@ -98,13 +99,58 @@ app.post("/api/v1/signin", async(req, res) => {
   
 });
 
-app.post("/api/v1/content", async(req, res) => {
+app.post("/api/v1/content",authMiddleware , async(req, res) => {
+  try{
+    await contentModel.create({
+      link: req.body.link,
+      type: req.body.type,
+      title: req.body.title,
+      tags: [],
+      userId: req.userId,
+    })
 
+    res.status(200).json({
+      message: "content added successfully"
+    })
+  }catch(e){
+    res.status(500).json({
+      message: "Server Error"
+    })
+  }
 });
 
-app.get("/api/v1/content", async(req, res) => {});
+app.get("/api/v1/content", authMiddleware, async(req, res) => {
+  try {
+    let response = await contentModel.find({
+      userId: req.userId
+    })
 
-app.delete("/api/v1/content", async(req, res) => {});
+    res.status(200).json({
+      response,
+      message: "Fetched all the content"
+    })
+  } catch (e) {
+    res.status(500).json({
+      message: "Server Error"
+    })
+  }
+});
+
+app.delete("/api/v1/content",authMiddleware , async(req, res) => {
+  try {
+    contentModel.deleteMany({
+      _id: req.body.contentId,
+      userId: req.userId
+    })
+    res.status(200).json({
+      message: "Deleted successfully"
+    })
+  } catch (e) {
+    res.status(500).json({
+      message: "Server Error"
+    })
+  }
+});
 
 app.post("/api/v1/brain/share", async(req, res) => {});
 
