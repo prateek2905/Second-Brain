@@ -7,6 +7,7 @@ import db from './db.js'
 const { userModel, contentModel, tagsModel, linkModel } = db;
 import { authMiddleware } from "./middlewares.js";
 import dotenv from "dotenv";
+import { random } from "./utils.js";
 dotenv.config()
 
 const app = express();
@@ -152,9 +153,86 @@ app.delete("/api/v1/content",authMiddleware , async(req, res) => {
   }
 });
 
-app.post("/api/v1/brain/share", async(req, res) => {});
+app.post("/api/v1/brain/share",authMiddleware ,async(req, res) => {
+  try {
+    const share = req.body.share;
+    const userId = req.userId;
+    if(share){
+      const link = await linkModel.findOne({
+        userId
+      })
 
-app.get("/api/v1/brain/:shareLink", async(req, res) => {});
+      if(link){
+        res.status(200).json({
+          hash: link.hash,
+          message: "Link already exists"
+        })
+      }else{
+        const hash = random(10);
+        await linkModel.create({
+          userId,
+          hash
+        })
+        res.status(200).json({
+          hash,
+          message: "Created your shareable link"
+        })
+      }
+
+    }else{
+      await linkModel.deleteOne({
+        userId
+      })
+      res.json({
+        message: "Deleted your link"
+      })
+    }
+  } catch (e) {
+    res.status(500).json({
+      message: "Server Error"
+    })
+  }
+});
+
+app.get("/api/v1/brain/:shareLink", async(req, res) => {
+  try {
+    const hash = req.params.shareLink;
+
+    const link = await linkModel.findOne({
+      hash
+    })
+
+    if(link){
+      if (!link.userId) {
+        res.status(404).json({ message: "User not found" });
+        return;
+      }
+
+      const content = await contentModel.find({
+        userId: link.userId
+      })
+      const user = await userModel.findOne({
+        _id: link.userId
+      })
+
+      if(!user){
+        res.status(404).json({ message: "User not found" });
+        return;
+      }
+      res.status(200).json({
+        content,
+        username: user.username
+      })
+    }else{
+      res.status(404).json({ message: "Invalid share link" });
+      return;
+    }
+  } catch (e) {
+    res.status(500).json({
+      message: "Server Error"
+    })
+  }
+});
 
 async () =>{
   await mongoose.connect(MONGO_URL);
